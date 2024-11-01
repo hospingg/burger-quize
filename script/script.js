@@ -1,6 +1,5 @@
 import { questions } from '../questions.js';
 
-
 const openQuizBtn = document.querySelector('#btnOpenModal');
 const quiz = document.querySelector('#modalBlock');
 const closeModalBtn = document.querySelector('#closeModal');
@@ -12,8 +11,7 @@ const sendBtn = document.getElementById("send");
 
 let currentQuestion = 0;
 const finalAnswers = [];
-
-
+let phoneNumber = '';
 
 function openQuiz() {
     quiz.classList.add('d-block');
@@ -22,6 +20,7 @@ function openQuiz() {
 
 function closeQuiz() {
     quiz.classList.remove('d-block');
+    // openQuizBtn.classList.add('d-block');
 }
 
 function showQuestion() {
@@ -66,7 +65,7 @@ function showQuestion() {
         answersElem.appendChild(answerItem);
     });
 
-    checkNextButtonStatus(); // Перевірка кнопки "Next"
+    checkNextButtonStatus();
     prevBtn.style.display = currentQuestion > 0 ? 'inline-block' : 'none';
 }
 
@@ -85,43 +84,96 @@ function checkNextButtonStatus() {
     const hasCheckedAnswer = Array.from(answersElem.querySelectorAll('input')).some(input => input.checked);
     nextBtn.disabled = !hasCheckedAnswer;
 }
+function handleNavigation(action) {
+    switch (action) {
+        case 'next':
+            saveAnswer();
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+                showQuestion();
+            } else {
+                displayFinalAnswers();
+                nextBtn.classList.add('d-none');
+                sendBtn.textContent = 'Далі';
+                sendBtn.classList.remove('d-none');
+            }
+            break;
 
-nextBtn.addEventListener('click', () => {
-    saveAnswer();
-    currentQuestion++;
-    if (currentQuestion < questions.length) {
-        showQuestion();
-    } else {
-        displayFinalAnswers();
-        nextBtn.classList.add('d-none');
-        sendBtn.classList.remove('d-none');
+        case 'prev':
+            if (currentQuestion > 0) {
+                currentQuestion--;
+
+                if (currentQuestion === questions.length - 1) {
+                    sendBtn.classList.add('d-none');
+                    nextBtn.classList.remove('d-none');
+                    answersElem.classList.remove('finall');
+                }
+
+                showQuestion();
+            }
+            break;
+
+        default:
+            console.error("Невідомий тип дії:", action);
     }
-});
 
-prevBtn.addEventListener('click', () => {
-    if (currentQuestion > 0) {
-        currentQuestion--;
+    // Оновлення видимості кнопки "prev"
+    prevBtn.style.display = currentQuestion > 0 ? 'inline-block' : 'none';
+    checkNextButtonStatus();
+}
 
-        if (currentQuestion === questions.length - 1) {
-            sendBtn.classList.add('d-none');
-            nextBtn.classList.remove('d-none');
-            answersElem.classList.remove('finall')
-        }
+nextBtn.addEventListener('click', () => handleNavigation('next'));
+prevBtn.addEventListener('click', () => handleNavigation('prev'));
 
-        showQuestion();
-    }
-});
+function showThankYouMessage() {
+    questionElem.textContent = "Дякую за відповідь!";
+    answersElem.innerHTML = '';
+
+    // Сховати кнопки навігації
+    nextBtn.classList.add('d-none');
+    prevBtn.classList.add('d-none');
+    sendBtn.classList.add('d-none');
+
+    // Закрити модальне вікно через 2 секунди
+    setTimeout(() => {
+        closeQuiz();
+    }, 2000);
+}
 
 sendBtn.addEventListener('click', () => {
-    alert("Ваші відповіді були надіслані!");
-    console.log('Final Answers:', finalAnswers);
-    closeQuiz();
+    if (sendBtn.textContent === 'Далі') {
+        displayPhoneNumberQuestion();
+    } else {
+        const userName = document.getElementById('userName').value.trim();
+        const phoneNumber = document.getElementById('phoneNumber').value.trim();
+
+        if (userName === '' || phoneNumber === '') {
+            alert('Будь ласка, введіть своє ім\'я та номер телефону!');
+            return;
+        }
+
+        finalAnswers.push({ 
+            question: "Контактні дані", 
+            answers: [
+                { title: "Ім'я", value: userName },
+                { title: "Номер телефону", value: phoneNumber }
+            ] 
+        });
+
+        console.log('Final Answers:', finalAnswers);
+
+        showThankYouMessage(); // Показати повідомлення подяки замість питання
+    }
 });
+
+
+
+
 
 function displayFinalAnswers() {
     questionElem.textContent = "Дякуємо за проходження тесту!";
-    answersElem.textContent = `Ваші відповіді`;
-    
+    answersElem.innerHTML = '';
+
     finalAnswers.forEach((item, idx) => {
         const questionDiv = document.createElement('div');
         questionDiv.classList.add('final-answer');
@@ -144,15 +196,47 @@ function displayFinalAnswers() {
 
             const span = document.createElement('span');
             span.textContent = answer.title;
-            answerList.appendChild(answerDiv)
+
             answerDiv.appendChild(img);
             answerDiv.appendChild(span);
-            questionDiv.appendChild(answerList);
+            answerList.appendChild(answerDiv);
         });
-
+        questionDiv.appendChild(answerList);
         answersElem.appendChild(questionDiv);
     });
 }
+
+function displayPhoneNumberQuestion() {
+    questionElem.textContent = "Введіть номер телефону та ім'я для завершення";
+    answersElem.innerHTML = '';
+
+    // Поле для введення імені
+    const nameLabel = document.createElement('label');
+    nameLabel.setAttribute('for', 'userName');
+    nameLabel.textContent = "Ім'я:";
+    answersElem.appendChild(nameLabel);
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.id = 'userName';
+    nameInput.placeholder = "Введіть своє ім'я";
+    answersElem.appendChild(nameInput);
+
+    // Поле для введення номера телефону
+    const phoneLabel = document.createElement('label');
+    phoneLabel.setAttribute('for', 'phoneNumber');
+    phoneLabel.textContent = 'Номер телефону:';
+    answersElem.appendChild(phoneLabel);
+
+    const phoneInput = document.createElement('input');
+    phoneInput.type = 'tel';
+    phoneInput.id = 'phoneNumber';
+    phoneInput.placeholder = 'Введіть номер телефону';
+    answersElem.appendChild(phoneInput);
+
+    sendBtn.textContent = 'Відправити';
+}
+
 
 openQuizBtn.addEventListener('click', openQuiz);
 closeModalBtn.addEventListener('click', closeQuiz);
