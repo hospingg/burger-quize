@@ -1,4 +1,19 @@
 import { questions } from '../questions.js';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyD-QMXhxqlWacsc9Z7rv-SOfS19yo6w0fs",
+    authDomain: "quiz-5f58c.firebaseapp.com",
+    databaseURL: "https://quiz-5f58c-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "quiz-5f58c",
+    storageBucket: "quiz-5f58c.appspot.com",
+    messagingSenderId: "968216466178",
+    appId: "1:968216466178:web:c2cb9f7e441d899e5de81b"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 const openQuizBtn = document.querySelector('#btnOpenModal');
 const quiz = document.querySelector('#modalBlock');
@@ -20,7 +35,6 @@ function openQuiz() {
 
 function closeQuiz() {
     quiz.classList.remove('d-block');
-    // openQuizBtn.classList.add('d-block');
 }
 
 function showQuestion() {
@@ -84,6 +98,7 @@ function checkNextButtonStatus() {
     const hasCheckedAnswer = Array.from(answersElem.querySelectorAll('input')).some(input => input.checked);
     nextBtn.disabled = !hasCheckedAnswer;
 }
+
 function handleNavigation(action) {
     switch (action) {
         case 'next':
@@ -117,7 +132,6 @@ function handleNavigation(action) {
             console.error("Невідомий тип дії:", action);
     }
 
-    // Оновлення видимості кнопки "prev"
     prevBtn.style.display = currentQuestion > 0 ? 'inline-block' : 'none';
     checkNextButtonStatus();
 }
@@ -129,12 +143,10 @@ function showThankYouMessage() {
     questionElem.textContent = "Дякую за відповідь!";
     answersElem.innerHTML = '';
 
-    // Сховати кнопки навігації
     nextBtn.classList.add('d-none');
     prevBtn.classList.add('d-none');
     sendBtn.classList.add('d-none');
 
-    // Закрити модальне вікно через 2 секунди
     setTimeout(() => {
         closeQuiz();
     }, 2000);
@@ -160,14 +172,21 @@ sendBtn.addEventListener('click', () => {
             ] 
         });
 
-        console.log('Final Answers:', finalAnswers);
-
-        showThankYouMessage(); // Показати повідомлення подяки замість питання
+        saveAnswersToFirebase();
+        showThankYouMessage();
     }
 });
 
-
-
+function saveAnswersToFirebase() {
+    const answersRef = ref(db, 'quizAnswers');
+    push(answersRef, finalAnswers)
+        .then(() => {
+            console.log("Відповіді успішно збережено у Firebase.");
+        })
+        .catch(error => {
+            console.error("Помилка збереження відповідей:", error);
+        });
+}
 
 
 function displayFinalAnswers() {
@@ -210,7 +229,6 @@ function displayPhoneNumberQuestion() {
     questionElem.textContent = "Введіть номер телефону та ім'я для завершення";
     answersElem.innerHTML = '';
 
-    // Поле для введення імені
     const nameLabel = document.createElement('label');
     nameLabel.setAttribute('for', 'userName');
     nameLabel.textContent = "Ім'я:";
@@ -222,7 +240,6 @@ function displayPhoneNumberQuestion() {
     nameInput.placeholder = "Введіть своє ім'я";
     answersElem.appendChild(nameInput);
 
-    // Поле для введення номера телефону
     const phoneLabel = document.createElement('label');
     phoneLabel.setAttribute('for', 'phoneNumber');
     phoneLabel.textContent = 'Номер телефону:';
@@ -236,7 +253,6 @@ function displayPhoneNumberQuestion() {
 
     sendBtn.textContent = 'Відправити';
 }
-
 
 openQuizBtn.addEventListener('click', openQuiz);
 closeModalBtn.addEventListener('click', closeQuiz);
